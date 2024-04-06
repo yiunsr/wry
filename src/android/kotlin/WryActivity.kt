@@ -6,11 +6,15 @@ package {{package}}
 
 import {{package}}.RustWebView
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.webkit.WebView
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.documentfile.provider.DocumentFile
+import org.json.JSONArray
 
 abstract class WryActivity : AppCompatActivity() {
     private lateinit var mWebView: RustWebView
@@ -107,6 +111,49 @@ abstract class WryActivity : AppCompatActivity() {
         }
         return super.onKeyDown(keyCode, event)
     }
+
+    // 코드 추가 부분
+    private fun walkTree(docTree: DocumentFile): JSONArray{
+        val jArray = JSONArray()
+
+        for(doc in docTree.listFiles()) {
+            if (doc.isDirectory) {
+                val resultArray = walkTree(doc)
+                for(idx in 0..resultArray.length()){
+                    jArray.put(resultArray[idx])
+                }
+            } else {
+                jArray.put(doc.getUri().toString())
+            }
+        }
+        return jArray
+    }
+
+    // 코드 추가 부분
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        Logger.warn("onActivityResult start")
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1001 && resultCode == RESULT_OK) {
+            Logger.warn("onActivityResult result_ok")
+            val directoryUri = data?.data ?: return
+
+            contentResolver.takePersistableUriPermission(
+                directoryUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            val directoryTag = directoryUri.toString()
+
+            val documentsTree = DocumentFile.fromTreeUri(this.application, directoryUri)?: return
+            val jsonFiles = walkTree(documentsTree)
+            val script = String.format("""directoryInfo("%S", %S)""", directoryTag, jsonFiles.toString())
+            Logger.warn("onActivityResult eval_script")
+
+            mWebView.evaluateJavascript(script, null)
+
+        }
+    }
+
+
 
     fun getAppClass(name: String): Class<*> {
         return Class.forName(name)
