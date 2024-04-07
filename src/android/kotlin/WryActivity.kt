@@ -114,27 +114,29 @@ abstract class WryActivity : AppCompatActivity() {
 
     // 코드 추가 부분
     private fun walkTree(docTree: DocumentFile): JSONArray{
+        Logger.debug("walkTree start")
         val jArray = JSONArray()
-
         for(doc in docTree.listFiles()) {
             if (doc.isDirectory) {
                 val resultArray = walkTree(doc)
                 for(idx in 0 until resultArray.length()){
-                    jArray.put(resultArray.getJSONObject(idx))
+                    val item = resultArray[idx]
+                    jArray.put(item)
                 }
             } else {
                 jArray.put(doc.getUri().toString())
             }
         }
+        Logger.debug("walkTree end")
         return jArray
     }
 
     // 코드 추가 부분
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        Logger.warn("onActivityResult start")
+        Logger.debug("onActivityResult start")
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1001 && resultCode == RESULT_OK) {
-            Logger.warn("onActivityResult result_ok")
+            Logger.debug("onActivityResult result_ok")
             val directoryUri = data?.data ?: return
 
             contentResolver.takePersistableUriPermission(
@@ -146,7 +148,7 @@ abstract class WryActivity : AppCompatActivity() {
             val documentsTree = DocumentFile.fromTreeUri(this.application, directoryUri)?: return
             val jsonFiles = walkTree(documentsTree)
             val script = String.format("""directoryInfo("%S", %S)""", directoryTag, jsonFiles.toString())
-            Logger.warn("onActivityResult eval_script")
+            Logger.debug("onActivityResult eval_script")
 
             mWebView.evaluateJavascript(script, null)
 
