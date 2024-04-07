@@ -139,15 +139,18 @@ abstract class WryActivity : AppCompatActivity() {
             Logger.debug("onActivityResult result_ok")
             val directoryUri = data?.data ?: return
 
+            val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+
             contentResolver.takePersistableUriPermission(
-                directoryUri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
+                directoryUri, takeFlags
             )
             val directoryTag = directoryUri.toString()
 
             val documentsTree = DocumentFile.fromTreeUri(this.application, directoryUri)?: return
             val jsonFiles = walkTree(documentsTree)
-            val script = String.format("""directoryInfo("%S", %S)""", directoryTag, jsonFiles.toString())
+
+            val script = String.format("""directoryInfo("%s", %s)""", directoryTag, jsonFiles.toString())
             Logger.debug("onActivityResult eval_script")
 
             mWebView.evaluateJavascript(script, null)
