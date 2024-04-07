@@ -119,8 +119,8 @@ abstract class WryActivity : AppCompatActivity() {
         for(doc in docTree.listFiles()) {
             if (doc.isDirectory) {
                 val resultArray = walkTree(doc)
-                for(idx in 0..resultArray.length()){
-                    jArray.put(resultArray[idx])
+                for(idx in 0 until resultArray.length()){
+                    jArray.put(resultArray.getJSONObject(idx))
                 }
             } else {
                 jArray.put(doc.getUri().toString())
